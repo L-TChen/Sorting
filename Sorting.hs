@@ -27,26 +27,15 @@ main = do
     generate $ vectorOf (10 ^ i) $ choose (0 :: Int, 10 ^ i))
 
   defaultMain
+    [ bgroup name 
       [ bgroup "Replicate" 
-        [ bgroup ("10^" ++ show i) [ bench name $ nf f xs | (name, f) <- sortfuncs ]
-        | xs <- sorted | i <- degrees ]
-
-      , bgroup "Ascending"  
-        [ bgroup ("10^" ++ show i) [ bench name $ nf f xs | (name, f) <- sortfuncs ] 
-        | xs <- ascending | i <- degrees ]
-
-      , bgroup "Descending"  
-        [ bgroup ("10^" ++ show i) [ bench name $ nf f xs | (name, f) <- sortfuncs ] 
-        | xs <- descending | i <- degrees ]
-
-      , bgroup "Random"  
-        [ bgroup ("10^" ++ show i) [ bench name $ nf f xs | (name, f) <- sortfuncs ] 
-        | xs <- random | i <- degrees ]
-
-      , bgroup "Diverse"  
-        [ bgroup ("10^" ++ show i) [ bench name $ nf f xs | (name, f) <- sortfuncs ] 
-        | xs <- diverse | i <- degrees ]
+        [ bench ("10^" ++ show i) $ nf f xs | xs <- sorted | i <- degrees ]
+      , bgroup "Random" 
+        [ bench ("10^" ++ show i) $ nf f xs | xs <- random | i <- degrees ]
+      , bgroup "Diverse" 
+        [ bench ("10^" ++ show i) $ nf f xs | xs <- diverse | i <- degrees ]
       ]
+    | (name, f) <- sortfuncs ] 
 
 -- I couldn't get the following working 
 --setupEnv = do
@@ -78,9 +67,9 @@ sortfuncs = [ ("Data.List.sort",             sort)
             , ("Newbie's Quicksort",         qsort)
             , ("Classic Haskell Quicksort",  hqsort)
             , ("Bird's Quicksort",           bqsort)
+            , ("Bird's Quicksort+asending check", baqsort)
             , ("3-way Quicksort",            tqsort)
-            , ("Bird's Quicksort w/asending check", baqsort)
-            , ("3-way Quicksort w/ascending check", taqsort)
+            , ("3-way Quicksort+ascending check", taqsort)
             , ("Tuned Quicksort",            xqsort)
             , ("Hybridsort", iqsort)
             ]
