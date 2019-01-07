@@ -2,9 +2,10 @@
 
 module Quick where
 
+import Data.List (insert) 
 import Insertion (inssort)
 
-iqsort, qsort, xqsort, hqsort, bqsort, baqsort, tqsort, taqsort :: (Ord a) => [a] -> [a] 
+iqsort, qsort, hqsort, bqsort, tqsort, taqsort :: (Ord a) => [a] -> [a] 
 
 qsort [] = [] 
 qsort (x:xs) = qsort ys ++ x:qsort zs 
@@ -29,25 +30,6 @@ bqsort (x:xs) = sortp xs [] []
     sortp (y:ys) us vs = 
       if y < x then sortp ys (y:us) vs else sortp ys us (y:vs)
 
-baqsort [] = []
-baqsort (x:xs) = sortp xs [] [] 
-  where
-    sortp []     us vs = baqsort us ++ (x:baqsort vs)
-    sortp (y:ys) us vs = 
-      if y < x then ascending ys y (y:us) vs else sortp ys us (y:vs)
-
-    ascending [] _ us vs = us ++ (x:baqsort vs) 
-    ascending (y:ys) y' us vs =
-      if y < x
-      then if y <= y' 
-           then ascending    ys y (y:us) vs
-           else notascending ys (y:us) vs
-      else ascending ys y' us (y:vs)
-
-    notascending []     us vs = baqsort us ++ (x:baqsort vs)
-    notascending (y:ys) us vs = 
-      if y < x then notascending ys (y:us) vs else notascending ys us (y:vs)
-
 tqsort [] = []
 tqsort (x:xs) = sortp xs [] [x] [] 
   where
@@ -59,14 +41,14 @@ tqsort (x:xs) = sortp xs [] [x] []
         _  -> sortp ys us (y:ws) vs
 
 taqsort [] = []
-taqsort (x:xs) = sortp xs [] [x] [] 
+taqsort (x:xs) = sortp xs [x] [] 
   where
-    sortp [] us ws vs     = taqsort us ++ ws ++ taqsort vs
-    sortp (y:ys) us ws vs =
+    sortp [] ws vs     = ws ++ taqsort vs
+    sortp (y:ys) ws vs =
       case compare y x of
-        GT -> sortp ys us ws (y:vs)
-        LT -> ascending ys y (y:us) ws vs
-        _  -> sortp ys us (x:ws) vs
+        GT -> sortp ys ws (y:vs)
+        LT -> ascending ys y [y] ws vs
+        _  -> sortp ys (x:ws) vs
 
     ascending [] _ us ws vs = us ++ ws ++ taqsort vs
     ascending (y:ys) y' us ws vs =
@@ -84,7 +66,7 @@ taqsort (x:xs) = sortp xs [] [x] []
 
 
 iqsort []     = []
-iqsort (x:xs) = sortp xs [] [] 1
+iqsort (x:xs) = sortp xs [] [] (1 :: Int)
   where
     sortp []     us vs _  = inssort us ++ x:inssort vs
     sortp (y:ys) us vs !n
@@ -97,6 +79,57 @@ iqsort (x:xs) = sortp xs [] [] 1
     sortp' (y:ys) us vs =
       if y < x then sortp' ys (y:us) vs else sortp' ys us (y:vs)
 
+--
+medianOfMedians :: (Ord a) => [a] -> a
+medianOfMedians [x] = x
+medianOfMedians xs = medianOfMedians (medianOfFives xs)
+
+medianOfFives (x0:x1:x2:x3:x4:xs) = 
+  let !m = median x0 x1 x2 x3 x4
+  in m:medianOfFives xs 
+medianOfFives [] = [] 
+medianOfFives xs = [ ys !! ((n - 1) `div` 2)] 
+  where (n, ys) = inssort' xs 
+
+inssort' :: (Ord a) => [a] -> (Int, [a])
+inssort' = foldr op (0, [])
+  where op x (!n, xs) = (n+1, insert x xs) 
+
+{-# INLINE median #-}
+median :: (Ord a) => a -> a -> a -> a -> a -> a
+median x0 x1 x2 x3 x4 = insert x0 (insert x1 $ insert x2 $ insert x3 [x4]) !! 2
+
+--
+mqsort :: Ord a => [a] -> [a]
+mqsort xs@(x:_) = mqsortWithPivot x xs
+mqsort [] = []
+
+mqsortWithPivot :: Ord a => a -> [a] -> [a]
+mqsortWithPivot p xs = sortp xs (0 :: Int) [] [] [] (0 :: Int) [] [] 
+  where 
+    sortp (y:ys) !n us ums ws !l vs vms = 
+      case compare y p of
+        GT -> if l < 5
+              then sortp ys n us ums ws (l+1) (y:vs) (y:vms)
+              else sortp ys n us ums ws 0     (y:vs) (medianOfFive (y:vms))
+        LT -> if n < 5
+              then sortp ys (n+1) (y:us) (y:ums)                ws l vs vms
+              else sortp ys 0     (y:us) (medianOfFive (y:ums)) ws l vs vms 
+        EQ -> sortp ys n us ums (y:ws) l vs vms
+    sortp []     _  []       _   ws _  []         _ = ws
+    sortp []     _  []       _   ws _  vs@(_:_) vms = ws ++ mqsortWithPivot (medianOfMedians vms) vs 
+    sortp []     _  us@(_:_) ums ws _  []         _ = mqsortWithPivot (medianOfMedians ums) us ++ ws
+    sortp []     _  us       ums ws _  vs       vms = 
+      mqsortWithPivot (medianOfMedians ums) us ++ ws ++ mqsortWithPivot (medianOfMedians vms) vs 
+
+medianOfFive :: Ord a => [a] -> [a] 
+medianOfFive (x0:x1:x2:x3:x4:xs) = 
+  let !m = median x0 x1 x2 x3 x4
+  in m:xs 
+--medianOfFives xs = [ ys !! ((n - 1) `div` 2)] 
+--  where (n, ys) = inssort' xs 
+
+xqsort :: Ord a => [a] -> [a]
 xqsort xs@(x:_) = xqsortWithPivot x xs
 xqsort [] = []
 
@@ -124,6 +157,7 @@ xqsortWithPivot p xs = sortp xs [] []
         GT -> notascending as b y us ws (a:vs)
         LT -> notascending as b y (a:us) ws vs 
         _  -> notascending as b y us (a:ws) vs
-    notascending [] !b !y us@(u:_) ws vs = 
-      let mid = if u > b then b else max u y -- median of the last, the head, and the first peak 
+    notascending [] !b !y us ws vs = 
+      let u = head us 
+          mid = if u > b then b else max u y -- median of the last, the head, and the first peak 
       in xqsortWithPivot mid us ++ ws ++ xqsort vs

@@ -1,4 +1,4 @@
-module Insertion where 
+module Insertion (inssort, insert) where 
 
 import Data.List (insert, foldl') 
 
