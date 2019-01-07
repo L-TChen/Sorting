@@ -22,7 +22,7 @@ main = do
   let worst = [ concat $ transpose [enumFromTo n (n+10^i), enumFromTo (n-10) (n-10+10^i)] | i <- degrees]
 
   random <- forM degrees (\i ->
-    generate $ vectorOf (10 ^ i) $ choose (0 :: Int, 10 ^ max 2 (i -2)))
+    generate $ vectorOf (10 ^ i) $ choose (0 :: Int, 10 ^ max 2 (i-1)))
 
   diverse <- forM degrees (\i -> 
     generate $ vectorOf (10 ^ i) $ choose (0 :: Int, 10 ^ i))
