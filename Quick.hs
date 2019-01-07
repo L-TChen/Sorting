@@ -5,7 +5,7 @@ module Quick where
 import Data.List (insert) 
 import Insertion (inssort)
 
-iqsort, qsort, hqsort, bqsort, tqsort, taqsort :: (Ord a) => [a] -> [a] 
+iqsort, qsort, hqsort, bqsort, tqsort, taqsort, q3s :: (Ord a) => [a] -> [a] 
 
 qsort [] = [] 
 qsort (x:xs) = qsort ys ++ x:qsort zs 
@@ -30,15 +30,15 @@ bqsort (x:xs) = sortp xs [] []
     sortp (y:ys) us vs = 
       if y < x then sortp ys (y:us) vs else sortp ys us (y:vs)
 
-tqsort [] = []
 tqsort (x:xs) = sortp xs [] [x] [] 
   where
-    sortp [] us ws vs     = tqsort us ++ ws ++ tqsort vs
     sortp (y:ys) us ws vs =
       case compare y x of 
         LT -> sortp ys (y:us) ws vs 
         GT -> sortp ys us ws (y:vs)
         _  -> sortp ys us (y:ws) vs
+    sortp [] us ws vs     = tqsort us ++ ws ++ tqsort vs
+tqsort [] = []
 
 taqsort [] = []
 taqsort (x:xs) = sortp xs [x] [] 
@@ -129,11 +129,11 @@ medianOfFive (x0:x1:x2:x3:x4:xs) =
 --medianOfFives xs = [ ys !! ((n - 1) `div` 2)] 
 --  where (n, ys) = inssort' xs 
 
-xqsort :: Ord a => [a] -> [a]
+xqsort :: (Integral a, Ord a) => [a] -> [a]
 xqsort xs@(x:_) = xqsortWithPivot x xs
 xqsort [] = []
 
-xqsortWithPivot :: Ord a => a -> [a] -> [a]
+xqsortWithPivot :: (Ord a, Integral a) => a -> [a] -> [a]
 xqsortWithPivot p xs = sortp xs [] [] 
   where
     sortp (y:ys) ws vs =
@@ -158,6 +158,17 @@ xqsortWithPivot p xs = sortp xs [] []
         LT -> notascending as b y (a:us) ws vs 
         _  -> notascending as b y us (a:ws) vs
     notascending [] !b !y us ws vs = 
-      let u = head us 
-          mid = if u > b then b else max u y -- median of the last, the head, and the first peak 
-      in xqsortWithPivot mid us ++ ws ++ xqsort vs
+      let m = (b + y + head us) `div` 3
+      in xqsortWithPivot m us ++ ws ++ xqsort vs
+
+-- By Will Ness from Stack Overflow:
+-- https://stackoverflow.com/questions/11355621/pseudo-quicksort-time-complexity/11373542#11373542
+q3s xs = go xs [] where
+  go     (x:xs) z = part x xs  go  (x:)  (`go` z)
+  go     []     z = z
+  part x (y:ys)  a  b  c =
+      case compare y x of
+                  LT -> part x ys  (a . (y:))  b  c
+                  EQ -> part x ys  a  (b . (y:))  c
+                  GT -> part x ys  a  b  (c . (y:))
+  part _ []      a  b  c = a [] (b (c []))

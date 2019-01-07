@@ -10,7 +10,7 @@ import Test.QuickCheck
 import Criterion.Main
 
 
-degrees = [2..4] 
+degrees = [2..6] 
 
 main :: IO ()
 main = do
@@ -78,5 +78,6 @@ sortfuncs = [ ("Data.List.sort",             sort)
             , ("3-way Quicksort+ascending check", taqsort)
             , ("Quicksort+Median of Medians", mqsort)
             , ("Tuned 3-way Quicksort", xqsort)
+            , ("Stable 3-way Quicksort", q3s)
             , ("Hybridsort", iqsort)
             ]
