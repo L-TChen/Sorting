@@ -1,6 +1,6 @@
-module Insertion (inssort, insert) where 
+module Insertion where 
 
-import Data.List (insert, foldl') 
+import Data.List
 
 inssort, inssort' :: (Ord a) => [a] -> [a] 
 

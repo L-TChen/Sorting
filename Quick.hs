@@ -30,15 +30,28 @@ bqsort (x:xs) = sortp xs [] []
     sortp (y:ys) us vs = 
       if y < x then sortp ys (y:us) vs else sortp ys us (y:vs)
 
+tqsort [] = []
 tqsort (x:xs) = sortp xs [] [x] [] 
   where
+    sortp [] us ws vs     = tqsort us ++ ws ++ tqsort vs
     sortp (y:ys) us ws vs =
       case compare y x of 
         LT -> sortp ys (y:us) ws vs 
         GT -> sortp ys us ws (y:vs)
         _  -> sortp ys us (y:ws) vs
-    sortp [] us ws vs     = tqsort us ++ ws ++ tqsort vs
-tqsort [] = []
+
+tqsorta xs = tqsort' xs [] 
+
+tqsort' :: (Ord a) => [a] -> [a] -> [a] 
+tqsort' [] rest = rest
+tqsort' (x:xs) rest = sortp xs [] [x] [] rest
+  where
+    sortp [] us ws vs rest    = tqsort' us (ws ++ tqsort' vs rest)
+    sortp (y:ys) us ws vs rest  =
+      case compare y x of 
+        LT -> sortp ys (y:us) ws vs rest
+        GT -> sortp ys us ws (y:vs) rest
+        _  -> sortp ys us (y:ws) vs rest
 
 taqsort [] = []
 taqsort (x:xs) = sortp xs [x] [] 
@@ -89,11 +102,10 @@ medianOfFives (x0:x1:x2:x3:x4:xs) =
   in m:medianOfFives xs 
 medianOfFives [] = [] 
 medianOfFives xs = [ ys !! ((n - 1) `div` 2)] 
-  where (n, ys) = inssort' xs 
-
-inssort' :: (Ord a) => [a] -> (Int, [a])
-inssort' = foldr op (0, [])
-  where op x (!n, xs) = (n+1, insert x xs) 
+  where
+    (n, ys) = inssort' xs 
+    inssort' = foldr op (0, [])
+      where op x (!n, xs) = (n+1, insert x xs) 
 
 {-# INLINE median #-}
 median :: (Ord a) => a -> a -> a -> a -> a -> a
@@ -158,8 +170,7 @@ xqsortWithPivot p xs = sortp xs [] []
         LT -> notascending as b y (a:us) ws vs 
         _  -> notascending as b y us (a:ws) vs
     notascending [] !b !y us ws vs = 
-      let m = (b + y + head us) `div` 3
-      in xqsortWithPivot m us ++ ws ++ xqsort vs
+      xqsortWithPivot ((b + y + head us) `div` 3) us ++ ws ++ xqsort vs
 
 -- By Will Ness from Stack Overflow:
 -- https://stackoverflow.com/questions/11355621/pseudo-quicksort-time-complexity/11373542#11373542

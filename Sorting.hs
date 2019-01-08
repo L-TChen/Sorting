@@ -1,5 +1,6 @@
-{-# LANGUAGE BangPatterns, ParallelListComp #-}
+{-# LANGUAGE BangPatterns, ParallelListComp, MonadComprehensions #-}
 
+import Splay
 import Quick
 import Insertion 
 import Merge 
@@ -9,42 +10,90 @@ import Control.Monad
 import Test.QuickCheck 
 import Criterion.Main
 
+type Name = String 
+type Sorting a = [a] -> [a]
 
-degrees = [2..6] 
+check :: IO ()
+check = mapM_ quickCheck [ prop f | (_, fs) <- sortfuncs, (_, f) <- fs ]
+  where prop f xs = f xs == sort xs 
+
+sortfuncs :: [(Name, [(Name, Sorting Int)])]
+sortfuncs = 
+  [ ("Heap Sort", heapsorts)
+  , ("Insertion Sort", inssorts)
+  , ("Quicksort", qssorts)
+  , ("Mergesort", mergesorts)
+  ]
+
+heapsorts =
+  [ ("Splay Sort", splaySort)
+  ]
+
+inssorts =
+  [ ("Classic",    inssort)
+  , ("Tail Tall",  inssort')
+  ]
+
+mergesorts =
+  [ ("Data.List.sort", sort)
+  , ("Smooth", smergesort)
+  , ("Classic", mergesort)
+  ]
+
+qssorts = 
+  [ ("Newbie",  qsort)
+  , ("Classic",  hqsort)
+  , ("Bird's",           bqsort)
+  , ("3way",            tqsort)
+  , ("3way+Accumulator", tqsorta)
+  , ("3way+Ascending", taqsort)
+  , ("Median of Medians", mqsort)
+  , ("3way+Ascending+MedianOf3", xqsort)
+  , ("Stable", q3s)
+  , ("Insertion", iqsort)
+  ]
+
+random, diverse :: Int -> IO [Int] 
+random i  = generate $ vectorOf (2^i) $ choose (0, 10^(i-1))
+diverse i = generate $ vectorOf (2^i) $ choose (0, 10^(i+1))
+
+sorted n i = replicate (2^i) n
+ascending n i = concat $ replicate 3 $ enumFromTo n (n + 2^i)
+descending n = reverse <$> ascending n
+worst n i = concat $ transpose [enumFromTo n (n+2^i), enumFromTo (n-10) (n-10+2^i)]
+pseudoRandom i = [(1299709 * 144737 - 10) `mod` x | x <- [100..2^i+100]] 
 
 main :: IO ()
 main = do
   n <- generate $ choose (0 :: Int, 100)
-  let sorted = [replicate (10 ^ i) n | i <- degrees]
 
-  let ascending  = concat $ replicate 3 [ enumFromTo n (n + 10^i) | i <- degrees]
-  let descending = reverse <$> ascending
-  let worst = [ concat $ transpose [enumFromTo n (n+10^i), enumFromTo (n-10) (n-10+10^i)] | i <- degrees]
+  let degrees = [16..20]
+  let static f = 
+        [ bench (desc ++ ":2^" ++ show i) $ nf f (xs i) 
+        | (desc, xs) <- [ ("Replicate", sorted n)
+                        , ("Ascending", ascending n)
+                        , ("Descending", descending n)
+                        , ("Adversary", worst n) 
+                        , ("Pseudorandom", pseudoRandom)
+                        ]
+        , i <- degrees 
+        ]
 
-  random <- forM degrees (\i ->
-    generate $ vectorOf (10 ^ i) $ choose (0 :: Int, 10 ^ max 2 (i-1)))
+  randoms' <- mapM random degrees 
+  let  randoms f = 
+         [ bench ("Random:2^" ++ show i) $ nf f xs | xs <- randoms' | i <- degrees ]
 
-  diverse <- forM degrees (\i -> 
-    generate $ vectorOf (10 ^ i) $ choose (0 :: Int, 10 ^ i))
+  diverses' <- mapM diverse degrees
+  let diverses f =
+        [ bench ("Diverses:2^" ++ show i) $ nf f xs | xs <- diverses' | i <- degrees ]
 
-  defaultMain
+  let testBenches = static <> randoms <> diverses
+
+  defaultMain 
     [ bgroup name 
-      [ bgroup "Replicate" 
-        [ bench ("10^" ++ show i) $ nf f xs | xs <- sorted | i <- degrees ]
-      , bgroup "Ascending" 
-        [ bench ("10^" ++ show i) $ nf f xs | xs <- ascending | i <- degrees ]
-      , bgroup "Descending" 
-        [ bench ("10^" ++ show i) $ nf f xs | xs <- descending | i <- degrees ]
-      , bgroup "Worst Case" 
-        [ bench ("10^" ++ show i) $ nf f xs | xs <- worst | i <- degrees ]
-      , bgroup "Random" 
-        [ bench ("10^" ++ show i) $ nf f xs | xs <- random | i <- degrees ]
-      , bgroup "Diverse" 
-        [ bench ("10^" ++ show i) $ nf f xs | xs <- diverse | i <- degrees ]
-      ]
-    | (name, f) <- sortfuncs ] 
+      [ bgroup subname (testBenches (length . f)) |  (subname, f) <- fs ]
+    | (name, fs) <- sortfuncs ]
 
--- I couldn't get the following working 
 --setupEnv = do
 --  n <- generate $ choose (0 :: Int, 100)
 --  let sorted = [replicate (10 ^ i) n    | i <- [3 .. 5]]
@@ -58,26 +107,3 @@ main = do
 --    generate $ vectorOf (10 ^ i) $ choose (0 :: Int, 10 ^ i))
 --
 --  return (sorted, random, diverse) 
-type Name = String 
-type Sorting a = [a] -> [a]
-
-check :: IO ()
-check = mapM_ quickCheck [ prop f | (_, f) <- sortfuncs ]
-  where prop f xs = f xs == sort xs 
-
-sortfuncs :: [(Name, Sorting Int)]
-sortfuncs = [ ("Data.List.sort",             sort)
-            , ("GHC's Bottom-Up Mergesort",  smergesort)
-            , ("Classic Bottom-Up Mergsort", mergesort)
-            , ("Insertion Sort",             inssort)
---            , ("Tail Call Insertion Sort",   inssort')
-            , ("Newbie's Quicksort",         qsort)
-            , ("Classic Haskell Quicksort",  hqsort)
-            , ("Bird's Quicksort",           bqsort)
-            , ("3-way Quicksort",            tqsort)
-            , ("3-way Quicksort+ascending check", taqsort)
-            , ("Quicksort+Median of Medians", mqsort)
-            , ("Tuned 3-way Quicksort", xqsort)
-            , ("Stable 3-way Quicksort", q3s)
-            , ("Hybridsort", iqsort)
-            ]
