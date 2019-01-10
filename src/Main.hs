@@ -4,6 +4,7 @@ import Splay
 import Quick
 import Insertion 
 import Merge 
+import qualified QuickX as QX
 import Data.List (sort, transpose)
 
 import Control.Monad
@@ -14,17 +15,21 @@ type Name = String
 type Sorting a = [a] -> [a]
 
 check :: IO ()
-check = mapM_ quickCheck [ prop f | (_, fs) <- sortfuncs, (_, f) <- fs ]
+check = mapM_ quickCheck [ prop f | (_, fs) <- sorters, (_, f) <- fs ]
   where prop f xs = f xs == sort xs 
 
-sortfuncs :: [(Name, [(Name, Sorting Int)])]
-sortfuncs = 
+sorters :: [(Name, [(Name, Sorting Int)])]
+sorters = 
   [ ("Heap Sort", heapsorts)
   , ("Insertion Sort", inssorts)
   , ("Quicksort", qssorts)
   , ("Mergesort", mergesorts)
+  , ("QuickXsort", qxsorts)
   ]
 
+qxsorts = 
+  [ ("Merge", QX.sort)
+  ]
 heapsorts =
   [ ("Splay Sort", splaySort)
   ]
@@ -54,8 +59,8 @@ qssorts =
   ]
 
 random, diverse :: Int -> IO [Int] 
-random i  = generate $ vectorOf (2^i) $ choose (0, 10^(i-1))
-diverse i = generate $ vectorOf (2^i) $ choose (0, 10^(i+1))
+random i  = generate $ vectorOf (2^i) $ choose (0, 10^(i-2))
+diverse i = generate $ vectorOf (2^i) $ choose (0, 10^(i+2))
 
 sorted n i = replicate (2^i) n
 ascending n i = concat $ replicate 3 $ enumFromTo n (n + 2^i)
@@ -92,7 +97,7 @@ main = do
   defaultMain 
     [ bgroup name 
       [ bgroup subname (testBenches (length . f)) |  (subname, f) <- fs ]
-    | (name, fs) <- sortfuncs ]
+    | (name, fs) <- sorters ]
 
 --setupEnv = do
 --  n <- generate $ choose (0 :: Int, 100)

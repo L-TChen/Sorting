@@ -18,7 +18,7 @@ extra-source-files:  CHANGELOG.md
 
 executable Sorting
   main-is:             Main.hs
-  other-modules:       Insertion, Merge, Quick, Splay
+  other-modules:       Insertion, Merge, Quick, Splay, QuickX
   ghc-options:         -O2
   other-extensions:    BangPatterns, ParallelListComp, MonadComprehensions
   build-depends:       base ^>=4.11.1.0, QuickCheck ^>=2.12.6.1, criterion ^>=1.5.3.0
