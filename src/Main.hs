@@ -1,10 +1,11 @@
-{-# LANGUAGE BangPatterns, ParallelListComp, MonadComprehensions #-}
+{-# LANGUAGE ParallelListComp, MonadComprehensions #-}
 
-import Splay
-import Quick
-import Insertion 
-import Merge 
-import qualified QuickX as QX
+import Data.List.Heap
+import Data.List.Quick
+import Data.List.Insertion 
+import Data.List.Merge 
+import qualified Data.List.QuickX as QX
+
 import Data.List (sort, transpose)
 
 import Control.Monad

@@ -1,19 +1,20 @@
 {-# LANGUAGE BangPatterns #-} 
 {-# OPTIONS_GHC -O2 #-}
 
-module QuickX where 
+module Data.List.QuickX where 
 
 import qualified Data.List as L
+--import Control.Parallel.Strategies 
 
-sort :: (Ord a) => [a] -> [a]
+sort :: Ord a => [a] -> [a]
 sort xs = sortapp xs [] 
 
 sortapp []     rest = rest
 sortapp (x:xs) rest = sortp x xs 0 0 [] [] [x] rest 
 
 sortp x []     !n !m us vs ws rest 
-  | n < m     = sortapp us (ws ++ smsort vs ++ rest)
-  | otherwise = smsort  us ++ ws ++ sortapp vs rest 
+  | m < n     = smsort us ++ ws ++ sortapp vs rest
+  | otherwise = sortapp us (ws ++ smsort vs ++ rest)
 sortp x (y:ys) !n !m us vs ws rest =
   case y `compare` x of
     LT -> sortp x ys (n+1) m     (y:us) vs     ws     rest
@@ -35,7 +36,7 @@ ascending a as (b:bs)
 ascending a as bs   = let !x = as [a]
                       in x : sequences bs
 
-smsort :: (Ord a) => [a] -> [a]
+smsort :: Ord a => [a] -> [a]
 smsort = mergeAll . sequences
   where
     mergeAll [x] = x

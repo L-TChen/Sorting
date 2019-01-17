@@ -1,9 +1,9 @@
 {-# LANGUAGE BangPatterns #-}
 
-module Quick where
+module Data.List.Quick where
 
 import Data.List (insert) 
-import Insertion (inssort)
+import Data.List.Insertion (inssort)
 
 iqsort, qsort, hqsort, bqsort, tqsort, taqsort, q3s :: (Ord a) => [a] -> [a] 
 

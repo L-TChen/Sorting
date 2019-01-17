@@ -1,4 +1,4 @@
-module Insertion where 
+module Data.List.Insertion where 
 
 import Data.List
 
